@@ -1,7 +1,9 @@
 //! Implementation of [`BlockchainTree`]
 use chain::{BlockChainId, Chain, ForkBlock};
 use reth_db::{cursor::DbCursorRO, database::Database, tables, transaction::DbTx};
-use reth_interfaces::{consensus::Consensus, executor::Error as ExecError, Error};
+use reth_interfaces::{
+    blockchain_tree::BlockStatus, consensus::Consensus, executor::Error as ExecError, Error,
+};
 use reth_primitives::{BlockHash, BlockNumber, SealedBlock, SealedBlockWithSenders};
 use reth_provider::{
     providers::ChainState, ExecutorFactory, HeaderProvider, StateProviderFactory, Transaction,
@@ -22,6 +24,9 @@ use config::BlockchainTreeConfig;
 
 pub mod externals;
 use externals::TreeExternals;
+
+pub mod shareable;
+pub use shareable::ShareableBlockchainTree;
 
 #[cfg_attr(doc, aquamarine::aquamarine)]
 /// Tree of chains and its identifications.
@@ -77,23 +82,6 @@ pub struct BlockchainTree<DB: Database, C: Consensus, EF: ExecutorFactory> {
     config: BlockchainTreeConfig,
 }
 
-/// From Engine API spec, block inclusion can be valid, accepted or invalid.
-/// Invalid case is already covered by error but we needs to make distinction
-/// between if it is valid (extends canonical chain) or just accepted (is side chain).
-/// If we dont know the block parent we are returning Disconnected status
-/// as we can't make a claim if block is valid or not.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum BlockStatus {
-    /// If block validation is valid and block extends canonical chain.
-    /// In BlockchainTree sense it forks on canonical tip.
-    Valid,
-    /// If block validation is valid but block does not extend canonical chain
-    /// (It is side chain) or hasn't been fully validated but ancestors of a payload are known.
-    Accepted,
-    /// If blocks is not connected to canonical chain.
-    Disconnected,
-}
-
 /// A container that wraps chains and block indices to allow searching for block hashes across all
 /// sidechains.
 pub struct BlockHashes<'a> {
@@ -140,6 +128,11 @@ impl<DB: Database, C: Consensus, EF: ExecutorFactory> BlockchainTree<DB, C, EF> 
             ),
             config,
         })
+    }
+
+    /// Expose internal indices of the BlockchainTree.
+    pub fn block_indices(&self) -> &BlockIndices {
+        &self.block_indices
     }
 
     /// Create a new sidechain by forking the given chain, or append the block if the parent block
