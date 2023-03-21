@@ -1,5 +1,7 @@
+use async_trait::async_trait;
+
 use super::AccountProvider;
-use crate::BlockHashProvider;
+use crate::{providers::ChainState, BlockHashProvider};
 use auto_impl::auto_impl;
 use reth_interfaces::Result;
 use reth_primitives::{
@@ -88,4 +90,11 @@ pub trait StateProviderFactory: Send + Sync {
 
     /// Returns a [StateProvider] indexed by the given block hash.
     fn history_by_block_hash(&self, block: BlockHash) -> Result<Self::HistorySP<'_>>;
+}
+
+/// Blockchain trait provider
+#[async_trait]
+pub trait BlockchainTreePendingStateProvider: Send + Sync {
+    /// Return state provider over pending state.
+    async fn pending_state_provider(&self, block: BlockHash) -> Result<ChainState<'_>>;
 }

@@ -22,7 +22,7 @@ mod receipts;
 pub use receipts::ReceiptProvider;
 
 mod state;
-pub use state::{StateProvider, StateProviderFactory};
+pub use state::{BlockchainTreePendingStateProvider, StateProvider, StateProviderFactory};
 
 mod transactions;
 pub use transactions::TransactionsProvider;

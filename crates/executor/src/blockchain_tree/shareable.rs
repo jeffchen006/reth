@@ -8,7 +8,7 @@ use reth_interfaces::{
     Error,
 };
 use reth_primitives::{BlockHash, BlockNumber, SealedBlockWithSenders};
-use reth_provider::ExecutorFactory;
+use reth_provider::{ExecutorFactory, StateProvider, StateProviderFactory};
 use tokio::sync::RwLock;
 
 use super::BlockchainTree;
@@ -60,5 +60,40 @@ impl<DB: Database, C: Consensus, EF: ExecutorFactory> BlockchainTreeViewer
 
     async fn canonical_blocks(&self) -> BTreeMap<BlockNumber, BlockHash> {
         self.tree.read().await.block_indices().canonical_chain().clone()
+    }
+}
+
+impl<DB: Database, C: Consensus, EF: ExecutorFactory> StateProviderFactory
+    for ShareableBlockchainTree<DB, C, EF>
+{
+    type HistorySP<'a>
+    where
+        Self: 'a;
+
+    type LatestSP<'a>
+    where
+        Self: 'a;
+
+    /// What should latest give back?
+    fn latest(&self) -> reth_interfaces::Result<Self::LatestSP<'_>> {
+        todo!()
+    }
+
+    /// history by block number, search canonical first then all pending.
+    ///
+    /// NOTE: If there are pending blocks, random block is going to be taken.
+    fn history_by_block_number(
+        &self,
+        block: BlockNumber,
+    ) -> reth_interfaces::Result<Self::HistorySP<'_>> {
+        todo!()
+    }
+
+    /// History by block hash. For both pending and canonical blocks.
+    fn history_by_block_hash(
+        &self,
+        block: BlockHash,
+    ) -> reth_interfaces::Result<Self::HistorySP<'_>> {
+        todo!()
     }
 }
